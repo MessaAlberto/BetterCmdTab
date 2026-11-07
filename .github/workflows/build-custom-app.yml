@@ -1,0 +1,45 @@
+name: Build Custom macOS App
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Branch to build
+        required: true
+        default: fix/swipe-appearance
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+
+      - name: Build Apple Silicon app
+        run: |
+          xcodebuild -project BetterCmdTab.xcodeproj \
+            -scheme "BetterCmdTab Debug" \
+            -configuration Debug \
+            -destination "generic/platform=macOS" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= \
+            build
+
+      - name: Package app
+        run: |
+          APP="$RUNNER_TEMP/DerivedData/Build/Products/Debug/BetterCmdTab.app"
+          test -d "$APP"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$RUNNER_TEMP/BetterCmdTab-Custom.zip"
+
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: BetterCmdTab-Custom
+          path: ${{ runner.temp }}/BetterCmdTab-Custom.zip
+          if-no-files-found: error
+          retention-days: 7
