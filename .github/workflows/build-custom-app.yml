@@ -32,7 +32,7 @@ jobs:
 
       - name: Package app
         run: |
-          APP="$RUNNER_TEMP/DerivedData/Build/Products/Debug/BetterCmdTab.app"
+          APP="$RUNNER_TEMP/DerivedData/Build/Products/Debug/BetterCmdTab Debug.app"
           test -d "$APP"
           ditto -c -k --sequesterRsrc --keepParent "$APP" "$RUNNER_TEMP/BetterCmdTab-Custom.zip"
 
