@@ -6,35 +6,46 @@ enum PrimedSelection {
     /// Start index for the first primed step. `anchor` is the frontmost app's
     /// position in the primed list (#88, #278); nil reproduces the legacy
     /// head-anchored start (step 1 → 1, step -1 → count-1).
-    static func startIndex(count: Int, step: Int, anchor: Int?) -> Int {
+    static func steppedIndex(current: Int, delta: Int, count: Int, wrap: Bool) -> Int {
+        guard count > 0 else { return 0 }
+        let candidate = current + delta
+        return wrap
+            ? ((candidate % count) + count) % count
+            : max(0, min(count - 1, candidate))
+    }
+
+    static func startIndex(count: Int, step: Int, anchor: Int?, wrap: Bool = true) -> Int {
         guard count > 1 else { return 0 }
-        return ((((anchor ?? 0) + step) % count) + count) % count
+        return steppedIndex(current: anchor ?? 0, delta: step, count: count, wrap: wrap)
     }
 
     /// `step` seeds `primedStepDelta`. Middle mode (#251) seeds 0, so the Space remap
     /// re-decides the frontmost skip. `excludedAt` is the slot of a frontmost app the list
     /// leaves out (#190, #278), now held by the next app, so a forward press seeds 0.
     static func start(
-        count: Int, delta: Int, anchor: Int?, startsInMiddle: Bool, excludedAt: Int? = nil
+        count: Int, delta: Int, anchor: Int?, startsInMiddle: Bool,
+        excludedAt: Int? = nil, wrap: Bool = true
     ) -> (index: Int, step: Int) {
         let direction = delta > 0 ? 1 : -1
         if startsInMiddle {
-            return (middleStartIndex(count: count, front: anchor, direction: direction, taps: 0), 0)
+            return (middleStartIndex(count: count, front: anchor, direction: direction, taps: 0, wrap: wrap), 0)
         }
         if let excludedAt {
             let step = direction > 0 ? 0 : -1
-            return (startIndex(count: count, step: step, anchor: excludedAt), step)
+            return (startIndex(count: count, step: step, anchor: excludedAt, wrap: wrap), step)
         }
         let step = count == 1 ? 0 : direction
-        return (startIndex(count: count, step: step, anchor: anchor), step)
+        return (startIndex(count: count, step: step, anchor: anchor, wrap: wrap), step)
     }
 
     /// The middle app, or one step from it in the press `direction` when it is
     /// the frontmost app, so a quick tap still switches; then `taps` more steps.
-    static func middleStartIndex(count: Int, front: Int?, direction: Int, taps: Int) -> Int {
+    static func middleStartIndex(
+        count: Int, front: Int?, direction: Int, taps: Int, wrap: Bool = true
+    ) -> Int {
         let middle = count / 2
         let skip = count > 1 && middle == front ? direction : 0
-        return startIndex(count: count, step: skip + taps, anchor: middle)
+        return startIndex(count: count, step: skip + taps, anchor: middle, wrap: wrap)
     }
 
     /// The frontmost app's index in `primed` as `anchor`, or, when the list leaves it out
@@ -70,15 +81,15 @@ enum PrimedSelection {
     /// Returns an index into `primedPids`; nil when nothing is eligible.
     static func eligibleIndex(
         primedPids: [pid_t], eligiblePids: Set<pid_t>, step: Int, direction: Int, anchorPid: pid_t?,
-        startsInMiddle: Bool, excludedAt: Int? = nil
+        startsInMiddle: Bool, excludedAt: Int? = nil, wrap: Bool = true
     ) -> Int? {
         let eligible = primedPids.enumerated().filter { eligiblePids.contains($0.element) }
         guard !eligible.isEmpty else { return nil }
         let front = anchorPid.flatMap { pid in eligible.firstIndex { $0.element == pid } }
         let next = excludedAt.map { at in eligible.firstIndex { $0.offset >= at } ?? eligible.count }
         let index = startsInMiddle
-            ? middleStartIndex(count: eligible.count, front: front, direction: direction, taps: step)
-            : startIndex(count: eligible.count, step: step, anchor: next ?? front)
+            ? middleStartIndex(count: eligible.count, front: front, direction: direction, taps: step, wrap: wrap)
+            : startIndex(count: eligible.count, step: step, anchor: next ?? front, wrap: wrap)
         return eligible[index].offset
     }
 
@@ -87,15 +98,17 @@ enum PrimedSelection {
     /// list leaves the frontmost app out, to the apps listed ahead of its slot: its rows are
     /// skipped too (an accessory app has rows but no primed entry), so step 0 lands on the
     /// first other row past them.
-    static func recencyRowIndex(rowPids: [pid_t?], front: pid_t?, appsAhead: [pid_t]?, step: Int) -> Int {
+    static func recencyRowIndex(
+        rowPids: [pid_t?], front: pid_t?, appsAhead: [pid_t]?, step: Int, wrap: Bool = true
+    ) -> Int {
         guard let appsAhead else {
             guard !rowPids.isEmpty else { return 0 }
             let base = front.flatMap { rowPids.firstIndex(of: $0) } ?? 0
-            return ((base + step) % rowPids.count + rowPids.count) % rowPids.count
+            return steppedIndex(current: base, delta: step, count: rowPids.count, wrap: wrap)
         }
         let others = rowPids.indices.filter { rowPids[$0] != front }
         guard !others.isEmpty else { return 0 }
         let base = others.prefix { index in appsAhead.contains { $0 == rowPids[index] } }.count
-        return others[((base + step) % others.count + others.count) % others.count]
+        return others[steppedIndex(current: base, delta: step, count: others.count, wrap: wrap)]
     }
 }

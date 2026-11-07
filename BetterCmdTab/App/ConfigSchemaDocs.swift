@@ -513,6 +513,7 @@ enum ConfigSchemaDocs {
             values: ConfigValues(SwipeMode.self, \.displayName)),
         "swipeReverseDirection": ConfigSettingDoc("boolean", "Reverse the swipe direction."),
         "swipeCommitOnRelease": ConfigSettingDoc("boolean", "Commit the swipe selection when the fingers lift."),
+        "swipeWrapAround": ConfigSettingDoc("boolean", "Wrap from the last app to the first and vice versa during trackpad switching."),
         "swipeSensitivity": ConfigSettingDoc(
             "integer", "How far fingers must slide to advance one app. Higher = more sensitive.",
             range: Preferences.swipeSensitivityRange),

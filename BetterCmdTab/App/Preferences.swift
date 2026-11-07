@@ -1018,6 +1018,7 @@ final class Preferences: ObservableObject {
         static let swipeMode = "Switcher.swipeMode"
         static let swipeReverseDirection = "Switcher.swipeReverseDirection"
         static let swipeCommitOnRelease = "Switcher.swipeCommitOnRelease"
+        static let swipeWrapAround = "Switcher.swipeWrapAround"
         static let swipeSensitivity = "Switcher.swipeSensitivity"
         static let swipeFingerCount = "Switcher.swipeFingerCount"
         static let scrollToSwitch = "Switcher.scrollToSwitch"
@@ -1649,6 +1650,16 @@ final class Preferences: ObservableObject {
         didSet {
             guard oldValue != swipeCommitOnRelease else { return }
             UserDefaults.standard.set(swipeCommitOnRelease, forKey: Keys.swipeCommitOnRelease)
+        }
+    }
+
+    /// When true (default), trackpad swipes wrap from the last app to the
+    /// first and vice versa. When false, selection stops at either end.
+    /// Only affects the "open switcher" trackpad swipe mode.
+    @Published var swipeWrapAround: Bool {
+        didSet {
+            guard oldValue != swipeWrapAround else { return }
+            UserDefaults.standard.set(swipeWrapAround, forKey: Keys.swipeWrapAround)
         }
     }
 
@@ -2804,6 +2815,7 @@ final class Preferences: ObservableObject {
         self.swipeMode = swipeModeRaw.flatMap(SwipeMode.init(rawValue:)) ?? .openSwitcher
         self.swipeReverseDirection = defaults.object(forKey: Keys.swipeReverseDirection) as? Bool ?? false
         self.swipeCommitOnRelease = defaults.object(forKey: Keys.swipeCommitOnRelease) as? Bool ?? false
+        self.swipeWrapAround = defaults.object(forKey: Keys.swipeWrapAround) as? Bool ?? true
         self.swipeSensitivity = Self.loadClamped(Keys.swipeSensitivity, default: Self.defaultSwipeSensitivity, clamp: Self.clampSwipeSensitivity, from: defaults)
         self.swipeFingerCount = Self.loadClamped(Keys.swipeFingerCount, default: Self.defaultSwipeFingerCount, clamp: Self.clampSwipeFingerCount, from: defaults)
         self.scrollToSwitch = defaults.object(forKey: Keys.scrollToSwitch) as? Bool ?? true
@@ -2969,6 +2981,7 @@ final class Preferences: ObservableObject {
         swipeMode = defaults.string(forKey: Keys.swipeMode).flatMap(SwipeMode.init(rawValue:)) ?? .openSwitcher
         swipeReverseDirection = defaults.object(forKey: Keys.swipeReverseDirection) as? Bool ?? false
         swipeCommitOnRelease = defaults.object(forKey: Keys.swipeCommitOnRelease) as? Bool ?? false
+        swipeWrapAround = defaults.object(forKey: Keys.swipeWrapAround) as? Bool ?? true
         swipeSensitivity = Self.loadClamped(Keys.swipeSensitivity, default: Self.defaultSwipeSensitivity, clamp: Self.clampSwipeSensitivity, from: defaults)
         swipeFingerCount = Self.loadClamped(Keys.swipeFingerCount, default: Self.defaultSwipeFingerCount, clamp: Self.clampSwipeFingerCount, from: defaults)
         scrollToSwitch = defaults.object(forKey: Keys.scrollToSwitch) as? Bool ?? true

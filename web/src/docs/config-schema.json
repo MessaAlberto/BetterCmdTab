@@ -1099,6 +1099,10 @@
       "minimum" : 1,
       "type" : "integer"
     },
+    "swipeWrapAround" : {
+      "description" : "Wrap from the last app to the first and vice versa during trackpad switching.",
+      "type" : "boolean"
+    },
     "tabDrillEnabled" : {
       "description" : "Peek the highlighted window's tabs with the Peek tabs key.",
       "type" : "boolean"

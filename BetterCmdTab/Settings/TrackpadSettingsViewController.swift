@@ -12,6 +12,7 @@ final class TrackpadSettingsViewController: SettingsTabViewController {
     private let swipeFingerCounts = Array(Preferences.swipeFingerCountRange)
     private let reverseSwitch = PreferenceSwitch(bind: \.swipeReverseDirection)
     private let commitSwitch = PreferenceSwitch(bind: \.swipeCommitOnRelease)
+    private let wrapSwitch = PreferenceSwitch(bind: \.swipeWrapAround)
     private let sensitivitySlider = NSSlider()
     private let sensitivityValueLabel = NSTextField(labelWithString: "")
 
@@ -48,6 +49,10 @@ final class TrackpadSettingsViewController: SettingsTabViewController {
         addRow(to: swipe, title: String(localized: "Swipe sensitivity"),
                subtitle: String(localized: "How far to slide to move one app. Higher means a shorter slide steps further."),
                accessory: makeSensitivityControl(), searchItemID: SearchID.sensitivity)
+
+        addRow(to: swipe, title: String(localized: "Wrap around on swipe"),
+               subtitle: String(localized: "Continue from the first app after the last, and vice versa. Turn off to stop at either end."),
+               accessory: wrapSwitch, searchItemID: SearchID.swipeWrapAround)
     }
 
     /// Slider (1–10) plus a value label, matching the reveal-delay control.
@@ -87,6 +92,7 @@ final class TrackpadSettingsViewController: SettingsTabViewController {
         if let index = swipeFingerCounts.firstIndex(of: prefs.swipeFingerCount) { swipeFingersPopup.selectItem(at: index) }
         reverseSwitch.sync()
         commitSwitch.sync()
+        wrapSwitch.sync()
         applySensitivity(prefs.swipeSensitivity)
         setSwipeSubOptionsEnabled(prefs.experimentalSwipeTrigger)
     }
@@ -133,5 +139,6 @@ final class TrackpadSettingsViewController: SettingsTabViewController {
         reverseSwitch.isEnabled = enabled && directional
         commitSwitch.isEnabled = enabled && scrub
         sensitivitySlider.isEnabled = enabled && scrub
+        wrapSwitch.isEnabled = enabled && scrub
     }
 }

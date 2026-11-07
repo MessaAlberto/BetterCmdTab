@@ -48,6 +48,52 @@
         }
       }
     },
+    "Continue from the first app after the last, and vice versa. Turn off to stop at either end." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach der letzten App zur ersten wechseln und umgekehrt. Deaktivieren, um an den Enden anzuhalten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Después de la última app, volver a la primera y viceversa. Desactívalo para detenerte en los extremos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passer de la dernière app à la première et inversement. Désactivez pour vous arrêter aux extrémités."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最後のアプリの次に最初のアプリへ戻り、その逆も同様です。オフにすると両端で停止します。"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Po ostatniej aplikacji przejdź do pierwszej i odwrotnie. Wyłącz, aby zatrzymywać się na końcach."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "После последнего приложения переходить к первому и наоборот. Отключите, чтобы останавливаться на краях."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从最后一个应用继续切换到第一个，反之亦然。关闭后会在两端停止。"
+          }
+        }
+      }
+    },
     "Use English (US) keys for shortcuts and search in the switcher, regardless of your input language." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -23207,6 +23253,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "开启“将浏览器标签页显示为单独条目”并使用“最近使用（窗口）”排序时，⌘Tab 会回到你上次使用的标签页，而不只是上一个窗口。需要持续监控浏览器，因此会稍微耗电。"
+          }
+        }
+      }
+    },
+    "Wrap around on swipe" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Wischen umlaufend wechseln"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver al inicio al deslizar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Boucler lors du balayage"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スワイプで端から反対側へ移動"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zawijaj przy przesuwaniu"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Зацикливать переключение жестом"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "滑动时循环切换"
           }
         }
       }

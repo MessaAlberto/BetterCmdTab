@@ -191,6 +191,7 @@ const sections: { title: string; keys: string[] }[] = [
       "swipeReverseDirection",
       "swipeCommitOnRelease",
       "swipeSensitivity",
+      "swipeWrapAround",
     ],
   },
   {
@@ -324,6 +325,7 @@ const defaults: Record<string, string> = {
   swipeMode: '"openSwitcher"',
   swipeReverseDirection: "false",
   swipeSensitivity: "5",
+  swipeWrapAround: "true",
   tabDrillEnabled: "true",
   titleRefreshIntervalMs: "200",
   titleTruncationMode: '"tail"',
