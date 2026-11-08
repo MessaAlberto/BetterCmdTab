@@ -1022,13 +1022,14 @@ final class SwitcherController: SwitcherViewDelegate {
             advance(by: delta, wrap: wrap)
         case .idle:
             mru.syncFrontmost()
-            primedApps = AppCatalog.fastAppList(orderedBy: mru.order, regularApps: cache.regularApps(), windowedPids: cache.windowedPids())
+            // Resolve the Apps profile before opening the gesture switcher,
+            // matching the keyboard path's per-shortcut appearance and filters.
+            resolveActiveOptions(for: .switchApps)
+            primedApps = primedAppList()
             // No empty-list bail: with every app filtered out (e.g. a lone
             // windowless Finder under its when-no-windows exception, #112)
             // the panel still reveals into the #31 empty state.
-            // Anchor on the global sort: this path never resolves per-shortcut
-            // options, so `effective` is a stale snapshot here (#88).
-            startPrimed(delta: delta, sort: Preferences.shared.sortOrder, wrap: wrap)
+            startPrimed(delta: delta, sort: effective.sortOrder, wrap: wrap)
             primedByHeldChord = false
             switchSessionKind = .none
             phase = .primed
