@@ -126,6 +126,7 @@ final class SwitcherController: SwitcherViewDelegate {
     /// Direction of the first primed press (1 or -1). Middle mode's Space remap
     /// steps off a frontmost middle app this way (#251).
     private var primedFirstDirection = 1
+    private var swipeOpeningWrap: Bool?
     /// Canonical catalog set for the current reveal. `rows`/`labels` are the
     /// *displayed* derivation (fuzzy-filtered or letter-prefix-reordered);
     /// `baseRows`/`baseLabels` are the unfiltered source so the search query
@@ -863,7 +864,7 @@ final class SwitcherController: SwitcherViewDelegate {
         swipeTrigger.onRowSwipe = { [weak self] delta in
             // Same as ↑/↓: a row in a multi-row grid, linear otherwise (#218).
             guard let self, self.phase == .visible else { return }
-            self.advanceVerticalOrLinear(by: delta)
+            self.advanceVerticalOrLinear(by: delta, wrap: Preferences.shared.swipeWrapAround)
         }
         swipeTrigger.onCommit = { [weak self] in
             self?.commitFromGesture()
@@ -1013,24 +1014,28 @@ final class SwitcherController: SwitcherViewDelegate {
             quickSwitchToPreviousApp()
             return
         }
+        let wrap = Preferences.shared.swipeWrapAround
         switch phase {
         case .visible:
-            advanceLinearVisible(by: delta, wrap: true)
+            advanceLinearVisible(by: delta, wrap: wrap)
         case .primed:
-            advance(by: delta, wrap: true)
+            advance(by: delta, wrap: wrap)
         case .idle:
             mru.syncFrontmost()
-            primedApps = AppCatalog.fastAppList(orderedBy: mru.order, regularApps: cache.regularApps(), windowedPids: cache.windowedPids())
+            // Resolve the Apps profile before opening the gesture switcher,
+            // matching the keyboard path's per-shortcut appearance and filters.
+            resolveActiveOptions(for: .switchApps)
+            primedApps = primedAppList()
             // No empty-list bail: with every app filtered out (e.g. a lone
             // windowless Finder under its when-no-windows exception, #112)
             // the panel still reveals into the #31 empty state.
-            // Anchor on the global sort: this path never resolves per-shortcut
-            // options, so `effective` is a stale snapshot here (#88).
-            startPrimed(delta: delta, sort: Preferences.shared.sortOrder)
+            startPrimed(delta: delta, sort: effective.sortOrder, wrap: wrap)
             primedByHeldChord = false
             switchSessionKind = .none
             phase = .primed
+            swipeOpeningWrap = wrap
             reveal()
+            swipeOpeningWrap = nil
             // After reveal lands the panel in `.visible`, detach from any
             // modifier so releasing one never commits a gesture-opened switcher.
             // Guarded like openScoped: a reveal that didn't present must not
@@ -2775,7 +2780,7 @@ final class SwitcherController: SwitcherViewDelegate {
         }
     }
 
-    private func startPrimed(delta: Int, sort: SwitcherSortOrder) {
+    private func startPrimed(delta: Int, sort: SwitcherSortOrder, wrap: Bool = true) {
         let frontPid = mru.order.first
         let frontApp = primedApps.first { $0.pid == frontPid }
             ?? NSWorkspace.shared.frontmostApplication.flatMap { $0.pid == frontPid ? $0 : nil }
@@ -2784,7 +2789,7 @@ final class SwitcherController: SwitcherViewDelegate {
         let start = PrimedSelection.start(
             count: primedApps.count, delta: delta, anchor: front.anchor,
             startsInMiddle: PrimedSelection.startsInMiddle(sort: sort, selection: Preferences.shared.initialSelection),
-            excludedAt: front.missingAt)
+            excludedAt: front.missingAt, wrap: wrap)
         primedIndex = start.index
         primedStepDelta = start.step
         primedFirstDirection = delta > 0 ? 1 : -1
@@ -2822,12 +2827,10 @@ final class SwitcherController: SwitcherViewDelegate {
             schedulePrimedReveal()
         case .primed:
             guard !primedApps.isEmpty else { return }
-            if wrap {
-                primedIndex = ((primedIndex + delta) % primedApps.count + primedApps.count) % primedApps.count
-            } else {
-                primedIndex = max(0, min(primedApps.count - 1, primedIndex + delta))
-            }
-            primedStepDelta += delta
+            let previousIndex = primedIndex
+            primedIndex = PrimedSelection.steppedIndex(
+                current: primedIndex, delta: delta, count: primedApps.count, wrap: wrap)
+            primedStepDelta += wrap ? delta : primedIndex - previousIndex
         case .visible:
             advanceLinearVisible(by: delta, wrap: wrap)
         }
@@ -2835,11 +2838,8 @@ final class SwitcherController: SwitcherViewDelegate {
 
     private func advanceLinearVisible(by delta: Int, wrap: Bool) {
         guard !rows.isEmpty else { return }
-        if wrap {
-            index = ((index + delta) % rows.count + rows.count) % rows.count
-        } else {
-            index = max(0, min(rows.count - 1, index + delta))
-        }
+        index = PrimedSelection.steppedIndex(
+            current: index, delta: delta, count: rows.count, wrap: wrap)
         showSelection()
         schedulePrefetchForCurrentSelection()
     }
@@ -2857,21 +2857,21 @@ final class SwitcherController: SwitcherViewDelegate {
     /// tile's, wrapping to the opposite-end row at the edges. In list mode it
     /// wraps within the current column (stays in same column). In single-row
     /// icon-dock it falls back to linear wrap.
-    private func advanceVerticalOrLinear(by delta: Int) {
+    private func advanceVerticalOrLinear(by delta: Int, wrap: Bool = true) {
         if phase == .visible,
            currentMetrics.layoutMode.isGridLike,
            view.rowsPerColumn > 1 {
-            if let newIndex = view.neighboringRowIndex(from: index, direction: delta, wrap: true) {
+            if let newIndex = view.neighboringRowIndex(from: index, direction: delta, wrap: wrap) {
                 index = newIndex
                 showSelection()
             }
             return
         }
         if phase == .visible, currentMetrics.layoutMode == .list {
-            wrapWithinColumn(by: delta)
+            wrapWithinColumn(by: delta, wrap: wrap)
             return
         }
-        advance(by: delta, wrap: true)
+        advance(by: delta, wrap: wrap)
     }
 
     /// In multi-column list mode, Left/Right jumps a full column over and
@@ -2892,7 +2892,7 @@ final class SwitcherController: SwitcherViewDelegate {
     /// Within the current list-mode column, advance by `delta` and wrap at the
     /// top/bottom of that column (respecting that the last column may have
     /// fewer items than rowsPerColumn).
-    private func wrapWithinColumn(by delta: Int) {
+    private func wrapWithinColumn(by delta: Int, wrap: Bool = true) {
         guard !rows.isEmpty else { return }
         let rpc = max(1, view.rowsPerColumn)
         let currentCol = index / rpc
@@ -2900,7 +2900,8 @@ final class SwitcherController: SwitcherViewDelegate {
         let firstInCol = currentCol * rpc
         let lastInColExclusive = min(firstInCol + rpc, rows.count)
         let itemsInCol = max(1, lastInColExclusive - firstInCol)
-        let newRow = ((currentRow + delta) % itemsInCol + itemsInCol) % itemsInCol
+        let newRow = PrimedSelection.steppedIndex(
+            current: currentRow, delta: delta, count: itemsInCol, wrap: wrap)
         index = firstInCol + newRow
         showSelection()
     }
@@ -4473,7 +4474,8 @@ final class SwitcherController: SwitcherViewDelegate {
             anchorPid: mru.order.first,
             startsInMiddle: PrimedSelection.startsInMiddle(
                 sort: effective.sortOrder, selection: Preferences.shared.initialSelection),
-            excludedAt: primedExcludedIndex
+            excludedAt: primedExcludedIndex,
+            wrap: swipeOpeningWrap ?? true
         ).map { primedApps[$0] }
     }
 
@@ -4511,7 +4513,8 @@ final class SwitcherController: SwitcherViewDelegate {
     private func primedRecencyIndex(in rows: [SwitcherRow]) -> Int {
         PrimedSelection.recencyRowIndex(
             rowPids: rows.map(\.pid), front: mru.order.first,
-            appsAhead: primedExcludedIndex.map { primedApps.prefix($0).map(\.pid) }, step: primedStepDelta)
+            appsAhead: primedExcludedIndex.map { primedApps.prefix($0).map(\.pid) },
+            step: primedStepDelta, wrap: swipeOpeningWrap ?? true)
     }
 
     private func bumpWindowMRUIfPossible(for row: SwitcherRow) {

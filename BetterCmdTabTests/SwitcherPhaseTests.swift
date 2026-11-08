@@ -480,3 +480,51 @@ struct SwitcherPrimedFrontSlotTests {
         #expect(row([5], step: 0, appsAhead: []) == 0)
     }
 }
+
+@Suite("Trackpad swipe wrap navigation")
+struct SwipeWrapNavigationTests {
+    @Test func visibleSelectionStopsAtBothEnds() {
+        #expect(PrimedSelection.steppedIndex(current: 4, delta: 1, count: 5, wrap: false) == 4)
+        #expect(PrimedSelection.steppedIndex(current: 0, delta: -1, count: 5, wrap: false) == 0)
+        #expect(PrimedSelection.steppedIndex(current: 2, delta: 1, count: 5, wrap: false) == 3)
+        #expect(PrimedSelection.steppedIndex(current: 0, delta: 1, count: 0, wrap: false) == 0)
+    }
+
+    @Test func defaultWrappingRemainsAvailable() {
+        #expect(PrimedSelection.steppedIndex(current: 4, delta: 1, count: 5, wrap: true) == 0)
+        #expect(PrimedSelection.steppedIndex(current: 0, delta: -1, count: 5, wrap: true) == 4)
+        #expect(PrimedSelection.start(count: 5, delta: 1, anchor: 4, startsInMiddle: false) == (0, 1))
+    }
+
+    @Test func openingSwipeStopsAtEnds() {
+        #expect(PrimedSelection.start(
+            count: 5, delta: 1, anchor: 4, startsInMiddle: false, wrap: false) == (4, 1))
+        #expect(PrimedSelection.start(
+            count: 5, delta: -1, anchor: 0, startsInMiddle: false, wrap: false) == (0, -1))
+        #expect(PrimedSelection.start(
+            count: 4, delta: 1, anchor: nil, startsInMiddle: false,
+            excludedAt: 4, wrap: false) == (3, 0))
+    }
+
+    @Test func filteredSpaceRemapStopsAtEnds() {
+        let pids: [pid_t] = [10, 20, 30, 40, 50]
+        #expect(PrimedSelection.eligibleIndex(
+            primedPids: pids, eligiblePids: [10, 30, 50], step: 1,
+            direction: 1, anchorPid: 50, startsInMiddle: false, wrap: false) == 4)
+        #expect(PrimedSelection.eligibleIndex(
+            primedPids: pids, eligiblePids: [10, 30, 50], step: -1,
+            direction: -1, anchorPid: 10, startsInMiddle: false, wrap: false) == 0)
+    }
+
+    @Test func windowRecencyRemapStopsAtEnds() {
+        let pids: [pid_t?] = [10, 20, 30]
+        #expect(PrimedSelection.recencyRowIndex(
+            rowPids: pids, front: 30, appsAhead: nil, step: 1, wrap: false) == 2)
+        #expect(PrimedSelection.recencyRowIndex(
+            rowPids: pids, front: 10, appsAhead: nil, step: -1, wrap: false) == 0)
+        #expect(PrimedSelection.recencyRowIndex(
+            rowPids: pids, front: 30, appsAhead: nil, step: 1) == 0)
+        #expect(PrimedSelection.recencyRowIndex(
+            rowPids: pids, front: 30, appsAhead: [10], step: 1, wrap: false) == 1)
+    }
+}

@@ -117,6 +117,7 @@ enum SearchID {
     static let reverseSwipe = "trackpad.reverseSwipe"
     static let switchOnRelease = "trackpad.switchOnRelease"
     static let sensitivity = "trackpad.sensitivity"
+    static let swipeWrapAround = "trackpad.swipeWrapAround"
     // Contents
     static let showMinimized = "contents.showMinimized"
     static let showHidden = "contents.showHidden"
@@ -428,6 +429,8 @@ enum SettingsCatalog {
              String(localized: "Switch on release"), ["release", "commit", "lift"]),
         item(SearchID.sensitivity, .trackpad, SettingsAnchor.swipe, String(localized: "Trackpad"), String(localized: "Trackpad swipe"),
              String(localized: "Swipe sensitivity"), ["sensitivity", "swipe", "distance"]),
+        item(SearchID.swipeWrapAround, .trackpad, SettingsAnchor.swipe, String(localized: "Trackpad"), String(localized: "Trackpad swipe"),
+             String(localized: "Wrap around on swipe"), ["swipe", "wrap", "loop", "cycle", "last app", "first app"]),
 
         // Contents · Contents
         item(SearchID.showMinimized, .contents, SettingsAnchor.contents, String(localized: "Contents"), String(localized: "Contents"),
